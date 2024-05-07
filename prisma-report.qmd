@@ -1,0 +1,58 @@
+---
+title: "Drop Procedure"
+format: html
+---
+
+# Article selection procedure
+
+```{r}
+library(dplyr)
+library(PRISMAstatement)
+
+df_papers <- read.csv("data/Papers imported_exported_1.csv")
+count(df_papers, source)
+n_dupes <- nrow(filter(df_papers, source == "pubmed, wos" | SelectionPhase1 == "Duplicate"))
+n_screened <- nrow(df_papers) - n_dupes
+n_found <- n_screened + n_dupes
+
+n_phase1_kept <- nrow(filter(df_papers, SelectionPhase1 == "Good"))
+n_phase1_dropped <- n_screened - n_phase1_kept
+
+n_phase2_kept <- nrow(filter(df_papers, FinalSelected == "YES"))
+
+n_phase2_tied <- nrow(filter(df_papers, FinalAnswered == 4, FinalGoodSum == 2))
+n_phase2_tied_kept <- nrow(filter(df_papers, FinalAnswered == 4, FinalGoodSum == 2, FinalSelected == "YES"))
+
+n_phase2_dropped <- n_phase1_kept - n_phase2_kept
+
+n_phase3_kept_all <- nrow(filter(df_papers,
+                        FinalSelected == "YES", 
+                        Phase3DropReason == ""))
+
+n_phase3_kept_reviews <- nrow(filter(df_papers, 
+                                FinalSelected == "YES", 
+                                Phase3DropReason == "",
+                                IsReview == TRUE))
+
+n_phase3_kept_notreviews <- n_phase3_all - n_phase3_reviews
+n_phase3_dropped_notreviews <- n_phase2_kept - n_phase
+
+```
+
+A total of `r n_screened + n_dupes` papers were identified using the search query on WOS and pubmed. These were prescanned by XY researchers, each considering the inclusion of the paper based on its title, ketowrds and abstract. In this phase, we included even papers with weak link to the topic, to be later fully considered in the second full text search. This left us with `r n_phase1_kept` papers.
+
+These papers were each considered by five researchers in a random order. If a paper receiuved three positive votes it was kept in the sample, if it received 3 negative points, it was removed. Articles with two on two points were assessed individually `r n_phase2_tied` and another `r n_phase2_tied_kept` were added.
+
+## Prisma chart
+
+```{r}
+prisma(found = n_found
+       found_other = 0,
+       no_dupes = n_screened,
+       screened = n_screened,
+       screen_exclusions = n_phase1_dropped,
+       full_text = n_phase1_kept,
+       full_text_exclusions = n_phase1 - n_phase3 + n_phase3_reviews,
+       qualitative = n_phase3 - n_phase3_reviews)
+
+```
