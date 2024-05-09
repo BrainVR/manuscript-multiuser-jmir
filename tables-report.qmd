@@ -1,0 +1,108 @@
+---
+title: "Drop Procedure"
+format: html
+---
+
+# Article selection procedure
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+library(dplyr)
+library(ggplot2)
+library(PRISMAstatement)
+library(gt)
+library(tidyr)
+
+knitr::opts_chunk$set(echo = FALSE, warnings = FALSE, message = FALSE)
+```
+
+```{r}
+df_papers <- read.csv("data/Papers imported_exported_1.csv")
+colnames(df_papers)
+df_final <- filter(df_papers,
+    FinalSelected == "YES",
+    Phase3DropReason == "",
+    IsReview == FALSE)
+n_papers <- nrow(df_final)
+```
+
+```{r}
+df_final %>%
+    select(DOI, Hardware) %>%
+    separate_longer_delim(Hardware, delim = ",") %>%
+    group_by(Hardware) %>%
+    summarise(n = n(),
+            percent = n / n_papers * 100) %>%
+    gt() %>%
+    tab_header(title = "Hardware used in the selected papers") %>%
+    cols_label(Hardware = "Hardware") %>%
+    fmt_number(columns = c("n"), decimals = 0) %>%
+    fmt_number(columns = c("percent"), decimals = 1)
+```
+
+```{r}
+df_final %>%
+    select(DOI, Multi.user.technology) %>%
+    separate_longer_delim(Multi.user.technology, delim = ",") %>%
+    group_by(Multi.user.technology) %>%
+    summarise(n = n(),
+            percent = n / n_papers * 100) %>%
+    gt() %>%
+    tab_header(title = "Multi-user technology used in the selected papers") %>%
+    cols_label(Multi.user.technology = "Multi-user technology") %>%
+    fmt_number(columns = c("n"), decimals = 0) %>%
+    fmt_number(columns = c("percent"), decimals = 1)
+```
+
+```{r}
+df_final %>%
+    select(DOI, Professional.Peer) %>%
+    separate_longer_delim(Professional.Peer, delim = ",") %>%
+    group_by(Professional.Peer) %>%
+    summarise(n = n(),
+            percent = n / n_papers * 100) %>%
+    gt() %>%
+    tab_header(title = "Professional peer used in the selected papers") %>%
+    cols_label(Professional.Peer = "Professional peer") %>%
+    fmt_number(columns = c("n"), decimals = 0) %>%
+    fmt_number(columns = c("percent"), decimals = 1)
+```
+
+```{r}
+df_final %>%
+    select(DOI, How.many.people) %>%
+    separate_longer_delim(How.many.people, delim = ",") %>%
+    group_by(How.many.people) %>%
+    summarise(n = n(),
+            percent = n / n_papers * 100) %>%
+    gt() %>%
+    tab_header(title = "Number of people used in the selected papers") %>%
+    cols_label(How.many.people = "Number of people") %>%
+    fmt_number(columns = c("n"), decimals = 0) %>%
+    fmt_number(columns = c("percent"), decimals = 1)
+```
+
+```{r}
+df_final %>%
+    select(DOI, MeetingFrequency) %>%
+    separate_longer_delim(MeetingFrequency, delim = ",") %>%
+    group_by(MeetingFrequency) %>%
+    summarise(n = n(),
+            percent = n / n_papers * 100) %>%
+    gt() %>%
+    tab_header(title = "Meeting frequency used in the selected papers") %>%
+    cols_label(MeetingFrequency = "Meeting frequency") %>%
+    fmt_number(columns = c("n"), decimals = 0) %>%
+    fmt_number(columns = c("percent"), decimals = 1)
+```
+
+```{r}
+ggplot(df_final, aes(x = Year)) + 
+    geom_histogram(binwidth = 1)
+
+# bin years into 5-year intervals and output a table
+df_final %>%
+    mutate(Year = cut(Year, breaks = seq(1995, 2030, 2))) %>%
+    group_by(Year) %>%
+    summarise(n = n(),
+            percent = n / n_papers * 100)
+```

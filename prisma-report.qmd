@@ -8,17 +8,24 @@ format: html
 ```{r}
 library(dplyr)
 library(PRISMAstatement)
+```
 
+```{r}
 df_papers <- read.csv("data/Papers imported_exported_1.csv")
 count(df_papers, source)
-n_dupes <- nrow(filter(df_papers, source == "pubmed, wos" | SelectionPhase1 == "Duplicate"))
-n_screened <- nrow(df_papers) - n_dupes
-n_found <- n_screened + n_dupes
+n_dupes_merged <- nrow(filter(df_papers, source == "pubmed, wos"))
+n_dupes_found <- nrow(filter(df_papers, SelectionPhase1 == "Duplicate"))
+n_dupes_total <- n_dupes_merged + n_dupes_found
+
+n_screened <- nrow(df_papers)
+n_found <- n_screened + n_dupes_merged
 
 n_phase1_kept <- nrow(filter(df_papers, SelectionPhase1 == "Good"))
 n_phase1_dropped <- n_screened - n_phase1_kept
 
 n_phase2_kept <- nrow(filter(df_papers, FinalSelected == "YES"))
+n_phase2_kept_notreviews <- nrow(filter(df_papers, FinalSelected == "YES" & !IsReview))
+
 
 n_phase2_tied <- nrow(filter(df_papers, FinalAnswered == 4, FinalGoodSum == 2))
 n_phase2_tied_kept <- nrow(filter(df_papers, FinalAnswered == 4, FinalGoodSum == 2, FinalSelected == "YES"))
@@ -33,26 +40,29 @@ n_phase3_kept_reviews <- nrow(filter(df_papers,
                                 FinalSelected == "YES", 
                                 Phase3DropReason == "",
                                 IsReview == TRUE))
+n_phase3_kept_notreviews <- n_phase3_kept_all - n_phase3_kept_reviews
 
-n_phase3_kept_notreviews <- n_phase3_all - n_phase3_reviews
-n_phase3_dropped_notreviews <- n_phase2_kept - n_phase
-
+n_phase3_dropped_all <- n_phase2_kept - n_phase3_kept_all
+n_phase3_dropped_not_reviews <- n_phase3_dropped_all - n_phase3_kept_reviews
 ```
 
-A total of `r n_screened + n_dupes` papers were identified using the search query on WOS and pubmed. These were prescanned by XY researchers, each considering the inclusion of the paper based on its title, ketowrds and abstract. In this phase, we included even papers with weak link to the topic, to be later fully considered in the second full text search. This left us with `r n_phase1_kept` papers.
+A total of `r n_found` papers were identified using the search query on WOS and pubmed. These were merged and `r n_dupes_merged` duplicates were found during this automated process. This left a `r n_screened` papers to be screened. 
 
-These papers were each considered by five researchers in a random order. If a paper receiuved three positive votes it was kept in the sample, if it received 3 negative points, it was removed. Articles with two on two points were assessed individually `r n_phase2_tied` and another `r n_phase2_tied_kept` were added.
+These were prescanned by 5 researchers, each receiving a portion of the dataset and considering the inclusion of the paper based on its title, keywords and abstract. In this phase, we included even papers with weak links to the topic, to be later fully considered in the second full text search. Papers were discarded based on various criteria, mainly if they were not focusing on mental health, but rather physical therapy, not offering digital therapy, not being multi user, targetting very limited ungeneralizable populations, being protocols of studies, not conducted studies etc. This preliminary search left us with `r n_phase1_kept` papers.
+
+These papers were each considered by five researchers, each receiving them in a random order. The researchers studied the fulltext of the paper and categorized it similarly to previous criteria (e.g. not offering multi user experience, focusing on limited populations). If a paper received three positive votes for inclusion, it was kept in the final review, if it received 3 negative points, it was excluded. Articles with two points for and two against were again addressed as a group (this included `r n_phase2_tied` papers) and another `r n_phase2_tied_kept` papers were added.
+
+The final sample included `r n_phase3_kept_notreviews` papers and `r n_phase3_kept_reviews` reviews. The reviews were not included in the qualitative synthesis.
 
 ## Prisma chart
 
 ```{r}
-prisma(found = n_found
+prisma(found = n_found,
        found_other = 0,
        no_dupes = n_screened,
        screened = n_screened,
        screen_exclusions = n_phase1_dropped,
        full_text = n_phase1_kept,
-       full_text_exclusions = n_phase1 - n_phase3 + n_phase3_reviews,
-       qualitative = n_phase3 - n_phase3_reviews)
-
+       full_text_exclusions = n_phase2_dropped,
+       qualitative = n_phase3_kept_notreviews)
 ```
