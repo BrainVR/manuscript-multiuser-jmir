@@ -1,0 +1,18 @@
+project:
+  type: website
+  render:
+    - prisma-report.qmd
+    - tables-report.qmd
+
+format:
+  html:
+    theme: cosmo
+
+website:
+  title: "JIMR multiuser VR paper"
+  navbar:
+    left:
+      - text: "Prisma"
+        href: prisma-report.qmd
+      - text: "Tables"
+        href: tables-report.qmd

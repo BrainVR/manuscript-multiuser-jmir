@@ -8,6 +8,8 @@ format: html
 ```{r, echo = FALSE, warning = FALSE, message = FALSE}
 library(dplyr)
 library(ggplot2)
+library(stringr)
+library(gtsummary)
 library(PRISMAstatement)
 library(gt)
 library(tidyr)
@@ -22,87 +24,84 @@ df_final <- filter(df_papers,
     FinalSelected == "YES",
     Phase3DropReason == "",
     IsReview == FALSE)
+
+df_final <- df_final %>%
+    mutate(across(c(How.many.people, Hardware, Multi.user.technology, MeetingFrequency, Professional.Peer),
+        # ~ sapply(str_split(., ","), str_trim) %>% toString(sort(.))))
+        ~ purrr::map_chr(strsplit(., ",") , ~ str_trim(paste0(sort(str_trim(.x)), collapse=","))))) %>%
+    mutate(multiuser_grouping = case_when(
+               How.many.people %in% c("2") ~ "dyadic",
+               TRUE ~ "multiuser"
+    ))
+df_final_multiuser <- df_final %>%
+    filter(multiuser_grouping == "multiuser")
 n_papers <- nrow(df_final)
 ```
 
 ```{r}
 df_final %>%
-    select(DOI, Hardware) %>%
-    separate_longer_delim(Hardware, delim = ",") %>%
-    group_by(Hardware) %>%
-    summarise(n = n(),
-            percent = n / n_papers * 100) %>%
+    select(How.many.people) %>%
+    tbl_summary()
+
+df_final %>%
+    select(DOI, multiuser_grouping, Professional.Peer) %>%
+    separate_longer_delim(Professional.Peer, delim = ",") %>%
+    count(multiuser_grouping, Professional.Peer) %>%
+    gt()
+
+df_final %>%
+    select(DOI, multiuser_grouping, Multi.user.technology) %>%
+    separate_longer_delim(Multi.user.technology, delim = ",") %>%
+    count(multiuser_grouping, Multi.user.technology) %>%
+    gt()
+
+df_final %>%
+    mutate(has_peer = ifelse(grepl("Peer", Professional.Peer), "Yes", "No"),
+            has_professional = ifelse(grepl("Professional", Professional.Peer), "Yes", "No")) %>%
+    separate_longer_delim(Multi.user.technology, delim = ",") %>%
+    count(has_peer, Multi.user.technology) %>%
+    group_by(has_peer) %>%
     gt() %>%
-    tab_header(title = "Hardware used in the selected papers") %>%
-    cols_label(Hardware = "Hardware") %>%
-    fmt_number(columns = c("n"), decimals = 0) %>%
-    fmt_number(columns = c("percent"), decimals = 1)
+        tab_header(title = "Multi user technology for papers which have peer support groups")
+
+df_final %>%
+    mutate(has_peer = ifelse(grepl("Peer", Professional.Peer), "Yes", "No"),
+            has_professional = ifelse(grepl("Professional", Professional.Peer), "Yes", "No")) %>%
+    separate_longer_delim(Multi.user.technology, delim = ",") %>%
+    count(has_professional, Multi.user.technology) %>%
+    group_by(has_professional) %>%
+    gt() %>%
+        tab_header(title = "Multi user technology for papers which have professional oversight")
+
 ```
 
+
 ```{r}
-df_final %>%
-    select(DOI, Multi.user.technology) %>%
+df_final_multiuser %>%
     separate_longer_delim(Multi.user.technology, delim = ",") %>%
     group_by(Multi.user.technology) %>%
-    summarise(n = n(),
-            percent = n / n_papers * 100) %>%
+    summarise(n = n(), percent = n / n_papers * 100) %>%
     gt() %>%
-    tab_header(title = "Multi-user technology used in the selected papers") %>%
-    cols_label(Multi.user.technology = "Multi-user technology") %>%
-    fmt_number(columns = c("n"), decimals = 0) %>%
-    fmt_number(columns = c("percent"), decimals = 1)
-```
+    tab_header(title = "Multi-user technology used in the multiuser (2 and 3+ or 3+) papers")
 
-```{r}
-df_final %>%
-    select(DOI, Professional.Peer) %>%
+df_final_multiuser %>%
+    separate_longer_delim(Hardware, delim = ",") %>%
+    group_by(Hardware) %>%
+    summarise(n = n(), percent = n / n_papers * 100) %>%
+    gt() %>%
+    tab_header(title = "Multi-user technology used in the multiuser (2 and 3+ or 3+) papers")
+
+df_final_multiuser %>%
     separate_longer_delim(Professional.Peer, delim = ",") %>%
     group_by(Professional.Peer) %>%
-    summarise(n = n(),
-            percent = n / n_papers * 100) %>%
+    summarise(n = n(), percent = n / n_papers * 100) %>%
     gt() %>%
-    tab_header(title = "Professional peer used in the selected papers") %>%
-    cols_label(Professional.Peer = "Professional peer") %>%
-    fmt_number(columns = c("n"), decimals = 0) %>%
-    fmt_number(columns = c("percent"), decimals = 1)
-```
+    tab_header(title = "Professional peer support in the multiuser (2 and 3+ or 3+) papers")
 
-```{r}
-df_final %>%
-    select(DOI, How.many.people) %>%
-    separate_longer_delim(How.many.people, delim = ",") %>%
-    group_by(How.many.people) %>%
-    summarise(n = n(),
-            percent = n / n_papers * 100) %>%
-    gt() %>%
-    tab_header(title = "Number of people used in the selected papers") %>%
-    cols_label(How.many.people = "Number of people") %>%
-    fmt_number(columns = c("n"), decimals = 0) %>%
-    fmt_number(columns = c("percent"), decimals = 1)
-```
-
-```{r}
-df_final %>%
-    select(DOI, MeetingFrequency) %>%
+df_final_multiuser %>%
     separate_longer_delim(MeetingFrequency, delim = ",") %>%
     group_by(MeetingFrequency) %>%
-    summarise(n = n(),
-            percent = n / n_papers * 100) %>%
+    summarise(n = n(), percent = n / n_papers * 100) %>%
     gt() %>%
-    tab_header(title = "Meeting frequency used in the selected papers") %>%
-    cols_label(MeetingFrequency = "Meeting frequency") %>%
-    fmt_number(columns = c("n"), decimals = 0) %>%
-    fmt_number(columns = c("percent"), decimals = 1)
-```
-
-```{r}
-ggplot(df_final, aes(x = Year)) + 
-    geom_histogram(binwidth = 1)
-
-# bin years into 5-year intervals and output a table
-df_final %>%
-    mutate(Year = cut(Year, breaks = seq(1995, 2030, 2))) %>%
-    group_by(Year) %>%
-    summarise(n = n(),
-            percent = n / n_papers * 100)
+    tab_header(title = "Meeting frequency in the multiuser (2 and 3+ or 3+) papers")
 ```
