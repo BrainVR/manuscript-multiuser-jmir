@@ -1,9 +1,11 @@
 # Mental Health Care in Multi-User Virtual Reality: The Journey from Non-Immersive to Immersive Applications
 
 ## Data
-- (PUBMED 1139) csv-19992024dp-set.csv: Original list of records downloaded from pubmedd
-- (WOS 1540) savedrecs.xls: Original list of records obtained from WOS
-- Papers imported_exported_1.csv: Final edited table downloaded after screening for table generation anbd flowchart generation purposes. Extends the merged dataset with screening information and notes
+- data/(PUBMED 1139) csv-19992024dp-set.csv: Original list of records downloaded from pubmedd
+- data/(WOS 1540) savedrecs.xls: Original list of records obtained from WOS
+- processed/papers_screened.csv: Merged list of manuscripts (from data) included in the selection process.
+- processed/papers_screening_3.csv: List of manuscripts screened by full-text assessment of contents during the last phase.
+- processed/papers_included.csv: Final list of publications included in the paper.
 
 ## Code
 - papers-merge.R: Code to merge and filter the data from pubmed and wos to be imported into the screening tool
